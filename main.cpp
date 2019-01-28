@@ -15,35 +15,50 @@ struct ButtonArray {
         // if new box is the widest, updates all boxes' width
         if (sz.width > maxWidth) {
             maxWidth = sz.width;
-            buttons.emplace_back(left, top, maxWidth, height);
+            buttons.emplace_back(Rect2i(left, top, maxWidth, height), false);
             for (auto &button : buttons) {
-                button.width = maxWidth;
+                button.first.width = maxWidth;
             }
         } else {
-            buttons.emplace_back(left, top, maxWidth, height);
+            buttons.emplace_back(Rect2i(left, top, maxWidth, height), false);
         }
         top += height;
         for (size_t i = 0; i != buttons.size(); i++) {
         }
         buttonNames.push_back(std::move(buttonName));
-        states.push_back(false);
     }
 
-    void draw(InputOutputArray canvas){
+    void imshow(const String& winname, InputOutputArray canvas){
+        auto mouse_callBack = [](int event, int x, int y, int flags, void *userdata) {
+            if (event == EVENT_LBUTTONDOWN) {
+                for (auto &[box,state] : *static_cast<std::vector<std::pair<Rect2i, bool>>*>(userdata)) {
+                    if (x > box.x and x < box.x + box.width and y > box.y and y < box.y + box.height) {
+                        state = !state;
+                        fmt::print("Changed state\n");
+                    }
+                }
+            }
+        };
+
         for (size_t i = 0; i != buttons.size(); i++) {
-            rectangle(canvas, buttons[i], {255, 0, 0}, 2);
-            putText(canvas, buttonNames[i], {buttons[i].x, buttons[i].y + height - baseline}, fontFace, fontScale, 0, thickness);
+            rectangle(canvas, buttons[i].first, {255, 0, 0}, 2);
+            putText(canvas, buttonNames[i], {buttons[i].first.x, buttons[i].first.y + height - baseline}, fontFace, fontScale, 0, thickness);
         }
+        namedWindow(winname);
+        setMouseCallback(winname, mouse_callBack, static_cast<void *>(&buttons));
+        imshow(winname, canvas);
     }
 
   private:
-    std::vector<Rect2i> buttons;
+    std::vector<std::pair<Rect2i, bool>> buttons;
     std::vector<String> buttonNames;
-    std::vector<bool> states;
     double fontScale;
     int thickness, fontFace, baseline = 0, height = 0;
     int maxWidth = -1;
     int top = 5, left = 5;
+
+
+
 };
 
 int main() {
@@ -52,7 +67,6 @@ int main() {
     buttonArray.addButton("hello");
     buttonArray.addButton("afterburner");
     buttonArray.addButton("world");
-    buttonArray.draw(canvas);
-    imshow("debug", canvas);
+    buttonArray.imshow("debug", canvas);
     waitKey(0);
 }
