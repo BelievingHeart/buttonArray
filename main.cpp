@@ -6,7 +6,7 @@ using namespace cv;
 
 struct ButtonArray {
     ButtonArray(double fontScale, int thickness, int fontFace = FONT_HERSHEY_SIMPLEX) : fontScale(fontScale), thickness(thickness), fontFace(fontFace) {}
-    void addButton(String buttonName) {
+    void addButton(const String& buttonName) {
         const Size sz = getTextSize(buttonName, fontFace, fontScale, thickness, &baseline);
         // initialize height for the first push_back
         if (buttons.empty()) {
@@ -15,43 +15,43 @@ struct ButtonArray {
         // if new box is the widest, updates all boxes' width
         if (sz.width > maxWidth) {
             maxWidth = sz.width;
-            buttons.emplace_back(Rect2i(left, top, maxWidth, height), false);
+            buttons[buttonName] = {Rect2i(left, top, maxWidth, height), false};
             for (auto &button : buttons) {
-                button.first.width = maxWidth;
+                button.second.first.width = maxWidth;
             }
         } else {
-            buttons.emplace_back(Rect2i(left, top, maxWidth, height), false);
+            buttons[buttonName] = {Rect2i(left, top, maxWidth, height), false};
         }
         top += height;
-        for (size_t i = 0; i != buttons.size(); i++) {
-        }
-        buttonNames.push_back(std::move(buttonName));
     }
 
     void imshow(const String& winname, InputOutputArray canvas){
         auto mouse_callBack = [](int event, int x, int y, int flags, void *userdata) {
             if (event == EVENT_LBUTTONDOWN) {
-                for (auto &[box,state] : *static_cast<std::vector<std::pair<Rect2i, bool>>*>(userdata)) {
-                    if (x > box.x and x < box.x + box.width and y > box.y and y < box.y + box.height) {
-                        state = !state;
+                for (auto &[buttonName ,button] : *static_cast<std::map<String, std::pair<Rect2i, bool>>*>(userdata)) {
+                    const auto& bx = button.first.x;
+                    const auto& by = button.first.y;
+                    const auto& bw = button.first.width;
+                    const auto& bh = button.first.height;
+                    if (x > bx and x < bx + bw and y > by and y < by + bh) {
+                        button.second = !button.second;
                         fmt::print("Changed state\n");
                     }
                 }
             }
         };
 
-        for (size_t i = 0; i != buttons.size(); i++) {
-            rectangle(canvas, buttons[i].first, {255, 0, 0}, 2);
-            putText(canvas, buttonNames[i], {buttons[i].first.x, buttons[i].first.y + height - baseline}, fontFace, fontScale, 0, thickness);
+        for (const auto& button : buttons) {
+            rectangle(canvas, button.second.first, {255, 0, 0}, 2);
+            putText(canvas, button.first, {button.second.first.x, button.second.first.y + height - baseline}, fontFace, fontScale, 0, thickness);
         }
         namedWindow(winname);
         setMouseCallback(winname, mouse_callBack, static_cast<void *>(&buttons));
-        imshow(winname, canvas);
+        cv::imshow(winname, canvas);
     }
 
   private:
-    std::vector<std::pair<Rect2i, bool>> buttons;
-    std::vector<String> buttonNames;
+    std::map<String, std::pair<Rect2i, bool>> buttons;
     double fontScale;
     int thickness, fontFace, baseline = 0, height = 0;
     int maxWidth = -1;
