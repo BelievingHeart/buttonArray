@@ -25,7 +25,7 @@ struct ButtonArray {
         top += height;
     }
 
-    void imshow(const String& winname, InputOutputArray canvas){
+    void imshow(const String& winName, InputOutputArray canvas){
         auto mouse_callBack = [](int event, int x, int y, int flags, void *userdata) {
             if (event == EVENT_LBUTTONDOWN) {
                 for (auto &[buttonName ,button] : *static_cast<std::map<String, std::pair<Rect2i, bool>>*>(userdata)) {
@@ -35,7 +35,7 @@ struct ButtonArray {
                     const auto& bh = button.first.height;
                     if (x > bx and x < bx + bw and y > by and y < by + bh) {
                         button.second = !button.second;
-                        fmt::print("Changed state\n");
+                        fmt::print("Set <{}> to {}\n", buttonName, button.second ? "ON" : "OFF");
                     }
                 }
             }
@@ -45,9 +45,13 @@ struct ButtonArray {
             rectangle(canvas, button.second.first, {255, 0, 0}, 2);
             putText(canvas, button.first, {button.second.first.x, button.second.first.y + height - baseline}, fontFace, fontScale, 0, thickness);
         }
-        namedWindow(winname);
-        setMouseCallback(winname, mouse_callBack, static_cast<void *>(&buttons));
-        cv::imshow(winname, canvas);
+        namedWindow(winName);
+        setMouseCallback(winName, mouse_callBack, static_cast<void *>(&buttons));
+        cv::imshow(winName, canvas);
+    }
+
+    bool& getState(const String& key){
+        return buttons[key].second;
     }
 
   private:
@@ -57,12 +61,10 @@ struct ButtonArray {
     int maxWidth = -1;
     int top = 5, left = 5;
 
-
-
 };
 
 int main() {
-    Mat canvas(480, 640, CV_8UC3, {255, 255, 255});
+    Mat canvas(480, 640, CV_8UC3, {128, 128, 128});
     ButtonArray buttonArray(1, 2);
     buttonArray.addButton("hello");
     buttonArray.addButton("afterburner");
