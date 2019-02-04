@@ -5,9 +5,9 @@
 using namespace cv;
 
 struct ButtonArray {
-    ButtonArray(double fontScale, int thickness, int fontFace = FONT_HERSHEY_SIMPLEX) : fontScale(fontScale), thickness(thickness), fontFace(fontFace) {}
-    void addButton(const String& buttonName) {
-        const Size sz = getTextSize(buttonName, fontFace, fontScale, thickness, &baseline);
+    ButtonArray(double fontScale, int thickness, int fontFace = cv::FONT_HERSHEY_SIMPLEX) : fontScale(fontScale), thickness(thickness), fontFace(fontFace) {}
+    void addButton(const cv::String& buttonName) {
+        const cv::Size sz = cv::getTextSize(buttonName, fontFace, fontScale, thickness, &baseline);
         // initialize height for the first push_back
         if (buttons.empty()) {
             height = baseline + sz.height + thickness;
@@ -15,20 +15,20 @@ struct ButtonArray {
         // if new box is the widest, updates all boxes' width
         if (sz.width > maxWidth) {
             maxWidth = sz.width;
-            buttons[buttonName] = {Rect2i(left, top, maxWidth, height), false};
+            buttons[buttonName] = {cv::Rect2i(left, top, maxWidth, height), false};
             for (auto &button : buttons) {
                 button.second.first.width = maxWidth;
             }
         } else {
-            buttons[buttonName] = {Rect2i(left, top, maxWidth, height), false};
+            buttons[buttonName] = {cv::Rect2i(left, top, maxWidth, height), false};
         }
         top += height;
     }
 
-    void imshow(const String& winName, InputOutputArray canvas){
+    void imshow(const cv::String& winName, cv::InputOutputArray canvas){
         auto mouse_callBack = [](int event, int x, int y, int flags, void *userdata) {
-            if (event == EVENT_LBUTTONDOWN) {
-                for (auto &[buttonName ,button] : *static_cast<std::map<String, std::pair<Rect2i, bool>>*>(userdata)) {
+            if (event == cv::EVENT_LBUTTONDOWN) {
+                for (auto &[buttonName ,button] : *static_cast<std::map<cv::String, std::pair<cv::Rect2i, bool>>*>(userdata)) {
                     const auto& bx = button.first.x;
                     const auto& by = button.first.y;
                     const auto& bw = button.first.width;
@@ -45,17 +45,17 @@ struct ButtonArray {
             rectangle(canvas, button.second.first, {255, 0, 0}, 2);
             putText(canvas, button.first, {button.second.first.x, button.second.first.y + height - baseline}, fontFace, fontScale, 0, thickness);
         }
-        namedWindow(winName);
-        setMouseCallback(winName, mouse_callBack, static_cast<void *>(&buttons));
+        cv::namedWindow(winName);
+        cv::setMouseCallback(winName, mouse_callBack, static_cast<void *>(&buttons));
         cv::imshow(winName, canvas);
     }
 
-    bool& getState(const String& key){
+    bool& getState(const cv::String& key){
         return buttons[key].second;
     }
 
   private:
-    std::map<String, std::pair<Rect2i, bool>> buttons;
+    std::map<cv::String, std::pair<cv::Rect2i, bool>> buttons;
     double fontScale;
     int thickness, fontFace, baseline = 0, height = 0;
     int maxWidth = -1;
